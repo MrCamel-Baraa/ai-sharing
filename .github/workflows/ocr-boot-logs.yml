@@ -1,0 +1,44 @@
+name: OCR boot logs
+
+on:
+  push:
+    paths:
+      - ".github/workflows/ocr-boot-logs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OCR tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr imagemagick
+
+      - name: OCR screenshots in filename order
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > boot-log.txt
+          find . -maxdepth 1 -type f -iname '*.jpg' -printf '%f\n' | sort | while IFS= read -r img; do
+            echo "===== $img =====" >> boot-log.txt
+            magick "$img" -colorspace Gray -contrast-stretch 0x20% -sharpen 0x1 "ocr-prepared.png"
+            tesseract "ocr-prepared.png" stdout --psm 6 2>/dev/null >> boot-log.txt || true
+            printf '\n' >> boot-log.txt
+          done
+          rm -f ocr-prepared.png
+          wc -l boot-log.txt
+          wc -c boot-log.txt
+
+      - name: Upload OCR result
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-log-ocr
+          path: boot-log.txt
+          retention-days: 7
