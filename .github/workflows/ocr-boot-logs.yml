@@ -28,7 +28,7 @@ jobs:
           : > boot-log.txt
           find . -maxdepth 1 -type f -iname '*.jpg' -printf '%f\n' | sort | while IFS= read -r img; do
             echo "===== $img =====" >> boot-log.txt
-            magick "$img" -colorspace Gray -contrast-stretch 0x20% -sharpen 0x1 "ocr-prepared.png"
+            convert "$img" -colorspace Gray -contrast-stretch 0x20% -sharpen 0x1 "ocr-prepared.png"
             tesseract "ocr-prepared.png" stdout --psm 6 2>/dev/null >> boot-log.txt || true
             printf '\n' >> boot-log.txt
           done
